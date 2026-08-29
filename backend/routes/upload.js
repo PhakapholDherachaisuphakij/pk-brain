@@ -29,6 +29,15 @@ uploadRouter.post('/', async (req, res) => {
     const randomName = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${ext}`;
     const filePath = `uploads/${randomName}`;
 
+    // Also persist locally to Portfolio public/uploads for instant 0ms CDN sync
+    try {
+      const portfolioPublicUploads = '/home/phakaphol/projects/Portfolio/frontend/public/uploads';
+      fs.mkdirSync(portfolioPublicUploads, { recursive: true });
+      fs.writeFileSync(path.join(portfolioPublicUploads, randomName), buffer);
+    } catch (e) {
+      console.warn('Local public sync warning:', e.message);
+    }
+
     // Upload to Supabase Storage
     const { data: uploadData, error: uploadErr } = await supabase
       .storage
