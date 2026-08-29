@@ -12,7 +12,7 @@ export default function PinLockModal({ onAuthenticated }) {
       const newPin = pin + num;
       setPin(newPin);
       setError('');
-      if (newPin.length === 4) {
+      if (newPin.length === 6) {
         verify(newPin);
       }
     }
@@ -74,11 +74,11 @@ export default function PinLockModal({ onAuthenticated }) {
         </div>
 
         <h1 className="text-xl font-bold text-white tracking-tight text-center">PK Brain Security</h1>
-        <p className="text-xs text-gray-400 mt-1 mb-6 text-center">กรุณากรอกรหัส PIN เพื่อเข้าสู่ระบบจัดการสมอง</p>
+        <p className="text-xs text-gray-400 mt-1 mb-6 text-center">กรุณากรอกรหัส PIN 6 หลักเพื่อเข้าสู่ระบบ</p>
 
         {/* PIN Indicators */}
         <div className="flex gap-3 mb-6">
-          {[0, 1, 2, 3].map((idx) => (
+          {[0, 1, 2, 3, 4, 5].map((idx) => (
             <div
               key={idx}
               className={`w-3.5 h-3.5 rounded-full border transition-all duration-200 ${
