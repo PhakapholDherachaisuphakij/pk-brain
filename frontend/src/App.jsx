@@ -5,9 +5,11 @@ import PromptInput from './components/PromptInput';
 import KnowledgeVault from './components/KnowledgeVault';
 import ProposalsModal from './components/ProposalsModal';
 import PortfolioStudio from './components/PortfolioStudio';
+import LockScreen from './components/LockScreen';
 import { api } from './lib/api';
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(Boolean(localStorage.getItem('pk_brain_token')));
   const [messages, setMessages] = useState([]);
   const [sessionId, setSessionId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -24,8 +26,16 @@ export default function App() {
   };
 
   useEffect(() => {
-    fetchStats();
+    const handleAuthRequired = () => setIsAuthenticated(false);
+    window.addEventListener('pk-brain-auth-required', handleAuthRequired);
+    return () => window.removeEventListener('pk-brain-auth-required', handleAuthRequired);
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchStats();
+    }
+  }, [isAuthenticated]);
 
   const handleSendMessage = async (text, imageUrls = []) => {
     const urls = Array.isArray(imageUrls) ? imageUrls : (imageUrls ? [imageUrls] : []);
@@ -75,9 +85,19 @@ export default function App() {
     setActiveModal(null);
   };
 
+  const handleLock = () => {
+    api.logout();
+    setIsAuthenticated(false);
+  };
+
   const handleProposalResolved = (id, status) => {
     fetchStats();
   };
+
+  // Render Lock Screen if unauthorized
+  if (!isAuthenticated) {
+    return <LockScreen onAuthenticated={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <div className="flex flex-col h-screen w-screen bg-black text-gray-100 overflow-hidden font-sans">
@@ -88,6 +108,7 @@ export default function App() {
         onOpenProposals={() => setActiveModal(activeModal === 'proposals' ? null : 'proposals')}
         onOpenStudio={() => setActiveModal(activeModal === 'studio' ? null : 'studio')}
         onNewChat={handleNewChat}
+        onLock={handleLock}
         activeTab={activeModal}
       />
 

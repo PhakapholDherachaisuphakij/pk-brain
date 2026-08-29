@@ -1,7 +1,7 @@
 import React from 'react';
-import { Brain, Sparkles, BookOpen, Plus, FolderGit2 } from 'lucide-react';
+import { Brain, Sparkles, BookOpen, Plus, FolderGit2, Lock } from 'lucide-react';
 
-export default function Header({ stats, onOpenVault, onOpenProposals, onOpenStudio, onNewChat, activeTab }) {
+export default function Header({ stats, onOpenVault, onOpenProposals, onOpenStudio, onNewChat, onLock, activeTab }) {
   return (
     <header className="h-14 border-b border-white/5 bg-black/60 backdrop-blur-xl px-4 flex items-center justify-between sticky top-0 z-30">
       {/* Left: Brand Logo & Identity */}
@@ -87,6 +87,15 @@ export default function Header({ stats, onOpenVault, onOpenProposals, onOpenStud
           title="เปิดแชทใหม่"
         >
           <Plus className="w-4 h-4" />
+        </button>
+
+        {/* Lock Screen Button */}
+        <button
+          onClick={onLock}
+          className="p-1.5 rounded-full bg-white/5 hover:bg-rose-500/20 text-gray-400 hover:text-rose-400 border border-white/10 transition-colors ml-0.5"
+          title="ล็อกระบบ (Lock Screen)"
+        >
+          <Lock className="w-4 h-4" />
         </button>
       </div>
     </header>

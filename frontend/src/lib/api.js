@@ -1,12 +1,64 @@
 const API_BASE = '/api';
 
+function getHeaders(custom = {}) {
+  const token = localStorage.getItem('pk_brain_token') || '';
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+    ...custom
+  };
+}
+
+async function authFetch(url, options = {}) {
+  const res = await fetch(url, {
+    ...options,
+    headers: getHeaders(options.headers || {})
+  });
+  if (res.status === 401 && !url.includes('/auth/')) {
+    localStorage.removeItem('pk_brain_token');
+    window.dispatchEvent(new Event('pk-brain-auth-required'));
+  }
+  return res;
+}
+
 export const api = {
+  // Auth
+  async verifyPin(pin) {
+    const res = await fetch(`${API_BASE}/auth/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Passcode ไม่ถูกต้อง');
+    }
+    const data = await res.json();
+    if (data.token) {
+      localStorage.setItem('pk_brain_token', data.token);
+    }
+    return data;
+  },
+
+  async checkAuth() {
+    try {
+      const res = await authFetch(`${API_BASE}/auth/check`);
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+
+  logout() {
+    localStorage.removeItem('pk_brain_token');
+    window.dispatchEvent(new Event('pk-brain-auth-required'));
+  },
+
   // Chat
   async sendMessage(message, sessionId = null, imageUrls = []) {
     const urls = Array.isArray(imageUrls) ? imageUrls : (imageUrls ? [imageUrls] : []);
-    const res = await fetch(`${API_BASE}/chat`, {
+    const res = await authFetch(`${API_BASE}/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         message, 
         sessionId, 
@@ -23,9 +75,8 @@ export const api = {
 
   // Image Upload
   async uploadImage(imageBase64, filename = 'image.png') {
-    const res = await fetch(`${API_BASE}/upload`, {
+    const res = await authFetch(`${API_BASE}/upload`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageBase64, filename })
     });
     if (!res.ok) {
@@ -36,13 +87,13 @@ export const api = {
   },
 
   async getSessions() {
-    const res = await fetch(`${API_BASE}/chat/sessions`);
+    const res = await authFetch(`${API_BASE}/chat/sessions`);
     if (!res.ok) throw new Error('Failed to load sessions');
     return res.json();
   },
 
   async getSessionMessages(sessionId) {
-    const res = await fetch(`${API_BASE}/chat/sessions/${sessionId}/messages`);
+    const res = await authFetch(`${API_BASE}/chat/sessions/${sessionId}/messages`);
     if (!res.ok) throw new Error('Failed to load messages');
     return res.json();
   },
@@ -50,34 +101,33 @@ export const api = {
   // Knowledge
   async getKnowledge(params = {}) {
     const query = new URLSearchParams(params).toString();
-    const res = await fetch(`${API_BASE}/knowledge?${query}`);
+    const res = await authFetch(`${API_BASE}/knowledge?${query}`);
     if (!res.ok) throw new Error('Failed to load knowledge');
     return res.json();
   },
 
   async getKnowledgeStats() {
-    const res = await fetch(`${API_BASE}/knowledge/stats`);
+    const res = await authFetch(`${API_BASE}/knowledge/stats`);
     if (!res.ok) throw new Error('Failed to load stats');
     return res.json();
   },
 
   async deleteKnowledge(id) {
-    const res = await fetch(`${API_BASE}/knowledge/${id}`, { method: 'DELETE' });
+    const res = await authFetch(`${API_BASE}/knowledge/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Failed to delete knowledge');
     return res.json();
   },
 
   // Portfolio Proposals
   async getProposals(status = 'all') {
-    const res = await fetch(`${API_BASE}/portfolio/proposals?status=${status}`);
+    const res = await authFetch(`${API_BASE}/portfolio/proposals?status=${status}`);
     if (!res.ok) throw new Error('Failed to load proposals');
     return res.json();
   },
 
   async approveProposal(id, customData = {}) {
-    const res = await fetch(`${API_BASE}/portfolio/proposals/${id}/approve`, {
+    const res = await authFetch(`${API_BASE}/portfolio/proposals/${id}/approve`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(customData)
     });
     if (!res.ok) {
@@ -88,7 +138,7 @@ export const api = {
   },
 
   async rejectProposal(id) {
-    const res = await fetch(`${API_BASE}/portfolio/proposals/${id}/reject`, {
+    const res = await authFetch(`${API_BASE}/portfolio/proposals/${id}/reject`, {
       method: 'POST'
     });
     if (!res.ok) throw new Error('Failed to reject proposal');
@@ -99,16 +149,15 @@ export const api = {
   // FULL PORTFOLIO STUDIO (CRUD)
   // ==========================================
   async getAllPortfolio() {
-    const res = await fetch(`${API_BASE}/portfolio/all`);
+    const res = await authFetch(`${API_BASE}/portfolio/all`);
     if (!res.ok) throw new Error('Failed to load portfolio data');
     return res.json();
   },
 
   // Projects
   async createProject(project) {
-    const res = await fetch(`${API_BASE}/portfolio/projects`, {
+    const res = await authFetch(`${API_BASE}/portfolio/projects`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(project)
     });
     if (!res.ok) throw new Error('Failed to create project');
@@ -116,9 +165,8 @@ export const api = {
   },
 
   async updateProject(id, project) {
-    const res = await fetch(`${API_BASE}/portfolio/projects/${id}`, {
+    const res = await authFetch(`${API_BASE}/portfolio/projects/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(project)
     });
     if (!res.ok) throw new Error('Failed to update project');
@@ -126,7 +174,7 @@ export const api = {
   },
 
   async deleteProject(id) {
-    const res = await fetch(`${API_BASE}/portfolio/projects/${id}`, {
+    const res = await authFetch(`${API_BASE}/portfolio/projects/${id}`, {
       method: 'DELETE'
     });
     if (!res.ok) throw new Error('Failed to delete project');
@@ -135,9 +183,8 @@ export const api = {
 
   // Activities
   async createActivity(activity) {
-    const res = await fetch(`${API_BASE}/portfolio/activities`, {
+    const res = await authFetch(`${API_BASE}/portfolio/activities`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(activity)
     });
     if (!res.ok) throw new Error('Failed to create activity');
@@ -145,9 +192,8 @@ export const api = {
   },
 
   async updateActivity(id, activity) {
-    const res = await fetch(`${API_BASE}/portfolio/activities/${id}`, {
+    const res = await authFetch(`${API_BASE}/portfolio/activities/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(activity)
     });
     if (!res.ok) throw new Error('Failed to update activity');
@@ -155,7 +201,7 @@ export const api = {
   },
 
   async deleteActivity(id) {
-    const res = await fetch(`${API_BASE}/portfolio/activities/${id}`, {
+    const res = await authFetch(`${API_BASE}/portfolio/activities/${id}`, {
       method: 'DELETE'
     });
     if (!res.ok) throw new Error('Failed to delete activity');
@@ -164,9 +210,8 @@ export const api = {
 
   // Skills
   async createSkill(skill) {
-    const res = await fetch(`${API_BASE}/portfolio/skills`, {
+    const res = await authFetch(`${API_BASE}/portfolio/skills`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(skill)
     });
     if (!res.ok) throw new Error('Failed to create skill');
@@ -174,9 +219,8 @@ export const api = {
   },
 
   async updateSkill(id, skill) {
-    const res = await fetch(`${API_BASE}/portfolio/skills/${id}`, {
+    const res = await authFetch(`${API_BASE}/portfolio/skills/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(skill)
     });
     if (!res.ok) throw new Error('Failed to update skill');
@@ -184,7 +228,7 @@ export const api = {
   },
 
   async deleteSkill(id) {
-    const res = await fetch(`${API_BASE}/portfolio/skills/${id}`, {
+    const res = await authFetch(`${API_BASE}/portfolio/skills/${id}`, {
       method: 'DELETE'
     });
     if (!res.ok) throw new Error('Failed to delete skill');
@@ -193,9 +237,8 @@ export const api = {
 
   // Experience
   async createExperience(exp) {
-    const res = await fetch(`${API_BASE}/portfolio/experience`, {
+    const res = await authFetch(`${API_BASE}/portfolio/experience`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(exp)
     });
     if (!res.ok) throw new Error('Failed to create experience');
@@ -203,9 +246,8 @@ export const api = {
   },
 
   async updateExperience(id, exp) {
-    const res = await fetch(`${API_BASE}/portfolio/experience/${id}`, {
+    const res = await authFetch(`${API_BASE}/portfolio/experience/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(exp)
     });
     if (!res.ok) throw new Error('Failed to update experience');
@@ -213,7 +255,7 @@ export const api = {
   },
 
   async deleteExperience(id) {
-    const res = await fetch(`${API_BASE}/portfolio/experience/${id}`, {
+    const res = await authFetch(`${API_BASE}/portfolio/experience/${id}`, {
       method: 'DELETE'
     });
     if (!res.ok) throw new Error('Failed to delete experience');
@@ -222,9 +264,8 @@ export const api = {
 
   // Profile
   async updateProfile(profile) {
-    const res = await fetch(`${API_BASE}/portfolio/profile`, {
+    const res = await authFetch(`${API_BASE}/portfolio/profile`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(profile)
     });
     if (!res.ok) throw new Error('Failed to update profile');
