@@ -3,6 +3,17 @@ import { supabase } from '../services/supabase.js';
 
 export const portfolioRouter = express.Router();
 
+const normalizeUrl = (url) => {
+  if (!url || typeof url !== 'string') return url;
+  const publicBase = process.env.SUPABASE_PUBLIC_URL || 'https://homelab.tail7d4c51.ts.net';
+  return url.replace(/^http:\/\/localhost:8000/, publicBase);
+};
+
+const normalizeArrayUrls = (arr) => {
+  if (!Array.isArray(arr)) return arr;
+  return arr.map(normalizeUrl);
+};
+
 // GET /api/portfolio/all - Get all portfolio content in one call
 portfolioRouter.get('/all', async (req, res) => {
   try {
@@ -24,14 +35,28 @@ portfolioRouter.get('/all', async (req, res) => {
       supabase.from('portfolio_proposals').select('*').order('created_at', { ascending: false })
     ]);
 
+    const cleanProjects = (projects || []).map(p => ({ ...p, image_url: normalizeUrl(p.image_url) }));
+    const cleanActivities = (activities || []).map(a => ({
+      ...a,
+      main_image: normalizeUrl(a.main_image),
+      gallery: normalizeArrayUrls(a.gallery)
+    }));
+    const cleanSkills = (skills || []).map(s => ({ ...s, image_url: normalizeUrl(s.image_url) }));
+    const cleanProfile = profiles ? { ...profiles, avatar_url: normalizeUrl(profiles.avatar_url) } : {};
+    const cleanProposals = (proposals || []).map(p => ({
+      ...p,
+      proposed_image_url: normalizeUrl(p.proposed_image_url),
+      gallery: normalizeArrayUrls(p.gallery)
+    }));
+
     res.json({
-      projects: projects || [],
-      activities: activities || [],
-      skills: skills || [],
+      projects: cleanProjects,
+      activities: cleanActivities,
+      skills: cleanSkills,
       experience: experience || [],
-      profile: profiles || {},
+      profile: cleanProfile,
       socialLinks: socialLinks || [],
-      proposals: proposals || []
+      proposals: cleanProposals
     });
   } catch (err) {
     console.error('Error fetching all portfolio data:', err);
@@ -82,8 +107,8 @@ portfolioRouter.post('/proposals/:id/approve', async (req, res) => {
 
     const title = customTitle || proposal.proposed_title;
     const description = customDescription || proposal.proposed_description;
-    const techStack = customTechStack || proposal.proposed_tech_stack || ['Fullstack'];
-    const imageUrl = customImage || proposal.proposed_image_url || 'https://frpbnexgcxfjpsrlsylt.supabase.co/storage/v1/object/public/portfolio-assets/assets/Project/yaiba.jfif';
+    const defaultPublic = process.env.SUPABASE_PUBLIC_URL || 'https://homelab.tail7d4c51.ts.net';
+    const imageUrl = customImage || proposal.proposed_image_url || `${defaultPublic}/storage/v1/object/public/portfolio-assets/assets/Project/yaiba.jfif`;
     const link = customLink || proposal.proposed_link || '';
     const experienceText = customExperience || proposal.experience_text || '';
 
@@ -92,7 +117,7 @@ portfolioRouter.post('/proposals/:id/approve', async (req, res) => {
     if (isActivity) {
       const semester = proposal.metadata?.semester || 'Semester 1';
       const periodLabel = proposal.metadata?.period_label || 'Instructor';
-      const mainImage = customImage || proposal.proposed_image_url || proposal.gallery?.[0] || 'https://frpbnexgcxfjpsrlsylt.supabase.co/storage/v1/object/public/portfolio-assets/assets/Devinit/devinit.jpg';
+      const mainImage = customImage || proposal.proposed_image_url || proposal.gallery?.[0] || `${defaultPublic}/storage/v1/object/public/portfolio-assets/assets/Devinit/devinit.jpg`;
       const gallery = proposal.gallery && proposal.gallery.length > 0 ? proposal.gallery : [mainImage];
 
       const { data: newActivity, error: actErr } = await supabase
@@ -194,7 +219,7 @@ portfolioRouter.post('/projects', async (req, res) => {
       .insert({
         title,
         description,
-        tech_stack: Array.isArray(tech_stack) ? tech_stack : (tech_stack ? tech_stack.split(',').map(s => s.trim()) : []),
+        tech_stack: Array.isArray(tech_stack) ? tech_stack : (typeof tech_stack === 'string' ? tech_stack.split(',').map(s => s.trim()).filter(Boolean) : []),
         image_url: image_url || '',
         link: link || '',
         experience_text: experience_text || '',
@@ -219,7 +244,11 @@ portfolioRouter.put('/projects/:id', async (req, res) => {
     const updatePayload = {};
     if (title !== undefined) updatePayload.title = title;
     if (description !== undefined) updatePayload.description = description;
-    if (tech_stack !== undefined) updatePayload.tech_stack = Array.isArray(tech_stack) ? tech_stack : tech_stack.split(',').map(s => s.trim());
+    if (tech_stack !== undefined) {
+      updatePayload.tech_stack = Array.isArray(tech_stack) 
+        ? tech_stack 
+        : (typeof tech_stack === 'string' ? tech_stack.split(',').map(s => s.trim()).filter(Boolean) : []);
+    }
     if (image_url !== undefined) updatePayload.image_url = image_url;
     if (link !== undefined) updatePayload.link = link;
     if (experience_text !== undefined) updatePayload.experience_text = experience_text;

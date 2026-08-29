@@ -157,10 +157,16 @@ export default function PortfolioStudio({ isOpen, onClose, onRefreshData }) {
     try {
       setSaving(true);
       if (editingType === 'project') {
+        const payload = {
+          ...editingItem,
+          tech_stack: typeof editingItem.tech_stack === 'string'
+            ? editingItem.tech_stack.split(',').map(s => s.trim()).filter(Boolean)
+            : (Array.isArray(editingItem.tech_stack) ? editingItem.tech_stack : [])
+        };
         if (isNew) {
-          await api.createProject(editingItem);
+          await api.createProject(payload);
         } else {
-          await api.updateProject(editingItem.id, editingItem);
+          await api.updateProject(editingItem.id, payload);
         }
       } else if (editingType === 'activity') {
         if (isNew) {
@@ -324,7 +330,7 @@ export default function PortfolioStudio({ isOpen, onClose, onRefreshData }) {
                       {/* Project Image Thumbnail */}
                       <div className="w-24 h-24 rounded-xl overflow-hidden bg-black/40 border border-white/10 shrink-0 relative group/thumb">
                         <img
-                          src={proj.image_url || 'https://frpbnexgcxfjpsrlsylt.supabase.co/storage/v1/object/public/portfolio-assets/assets/Project/yaiba.jfif'}
+                          src={proj.image_url || 'https://homelab.tail7d4c51.ts.net/storage/v1/object/public/portfolio-assets/assets/Project/yaiba.jfif'}
                           alt={proj.title}
                           className="w-full h-full object-cover"
                         />
@@ -513,7 +519,7 @@ export default function PortfolioStudio({ isOpen, onClose, onRefreshData }) {
                   <div className="flex items-center gap-4 pb-4 border-b border-white/5">
                     <div className="w-16 h-16 rounded-full overflow-hidden bg-black/40 border-2 border-white/10 relative group/av shrink-0">
                       <img
-                        src={data.profile?.avatar_url || 'https://frpbnexgcxfjpsrlsylt.supabase.co/storage/v1/object/public/portfolio-assets/assets/Project/yaiba.jfif'}
+                        src={data.profile?.avatar_url || 'https://homelab.tail7d4c51.ts.net/storage/v1/object/public/portfolio-assets/assets/Project/yaiba.jfif'}
                         alt="Avatar"
                         className="w-full h-full object-cover"
                       />
@@ -700,8 +706,8 @@ export default function PortfolioStudio({ isOpen, onClose, onRefreshData }) {
                   <label className="text-[11px] text-gray-300 font-semibold block mb-1">Tech Stack (คั่นด้วยจุลภาค)</label>
                   <input
                     type="text"
-                    value={Array.isArray(editingItem.tech_stack) ? editingItem.tech_stack.join(', ') : (editingItem.tech_stack || '')}
-                    onChange={(e) => setEditingItem({ ...editingItem, tech_stack: e.target.value.split(',').map(s => s.trim()) })}
+                    value={typeof editingItem.tech_stack === 'string' ? editingItem.tech_stack : (Array.isArray(editingItem.tech_stack) ? editingItem.tech_stack.join(', ') : '')}
+                    onChange={(e) => setEditingItem({ ...editingItem, tech_stack: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white text-xs"
                     placeholder="React, TailwindCSS, Node.js"
                   />

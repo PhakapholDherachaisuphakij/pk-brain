@@ -38,7 +38,9 @@ uploadRouter.post('/', async (req, res) => {
         upsert: true
       });
 
+    let targetBucket = bucket;
     if (uploadErr) {
+      targetBucket = 'image';
       // Fallback to 'image' bucket if portfolio-assets errors
       const { data: fallbackData, error: fallbackErr } = await supabase
         .storage
@@ -53,12 +55,19 @@ uploadRouter.post('/', async (req, res) => {
     // Generate public URL
     const { data: publicUrlData } = supabase
       .storage
-      .from(bucket)
+      .from(targetBucket)
       .getPublicUrl(filePath);
+
+    let publicUrl = publicUrlData?.publicUrl || '';
+    const publicBase = process.env.SUPABASE_PUBLIC_URL;
+    const internalBase = process.env.SUPABASE_URL;
+    if (publicBase && internalBase && publicUrl.startsWith(internalBase)) {
+      publicUrl = publicUrl.replace(internalBase, publicBase);
+    }
 
     res.json({
       success: true,
-      url: publicUrlData.publicUrl,
+      url: publicUrl,
       filename: randomName
     });
 
