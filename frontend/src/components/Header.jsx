@@ -80,6 +80,17 @@ export default function Header({ stats, onOpenVault, onOpenProposals, onOpenStud
           <span className="font-semibold">Portfolio Studio</span>
         </button>
 
+        {/* Lock Button */}
+        {onLock && (
+          <button
+            onClick={onLock}
+            className="p-1.5 rounded-full bg-white/5 hover:bg-red-500/20 hover:border-red-500/40 text-gray-400 hover:text-red-400 border border-white/10 transition-colors ml-0.5"
+            title="ล็อค PK Brain"
+          >
+            <Lock className="w-3.5 h-3.5" />
+          </button>
+        )}
+
         {/* New Chat Button */}
         <button
           onClick={onNewChat}

@@ -36,6 +36,16 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Auth Verification
+app.post('/api/auth/verify-pin', (req, res) => {
+  const { pin } = req.body;
+  const masterPin = process.env.PK_BRAIN_PIN || '2525';
+  if (String(pin).trim() === String(masterPin).trim()) {
+    return res.json({ success: true, message: 'ยินดีต้อนรับสู่ PK Brain' });
+  }
+  return res.status(401).json({ success: false, error: 'PIN ไม่ถูกต้อง' });
+});
+
 // Register API routes
 app.use('/api/chat', chatRouter);
 app.use('/api/knowledge', knowledgeRouter);

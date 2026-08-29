@@ -1,6 +1,20 @@
 const API_BASE = '/api';
 
 export const api = {
+  // Auth
+  async verifyPin(pin) {
+    const res = await fetch(`${API_BASE}/auth/verify-pin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'PIN ไม่ถูกต้อง');
+    }
+    return res.json();
+  },
+
   // Chat
   async sendMessage(message, sessionId = null, imageUrls = []) {
     const urls = Array.isArray(imageUrls) ? imageUrls : (imageUrls ? [imageUrls] : []);
