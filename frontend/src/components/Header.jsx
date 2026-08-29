@@ -88,15 +88,6 @@ export default function Header({ stats, onOpenVault, onOpenProposals, onOpenStud
         >
           <Plus className="w-4 h-4" />
         </button>
-
-        {/* Lock Screen Button */}
-        <button
-          onClick={onLock}
-          className="p-1.5 rounded-full bg-white/5 hover:bg-rose-500/20 text-gray-400 hover:text-rose-400 border border-white/10 transition-colors ml-0.5"
-          title="ล็อกระบบ (Lock Screen)"
-        >
-          <Lock className="w-4 h-4" />
-        </button>
       </div>
     </header>
   );
