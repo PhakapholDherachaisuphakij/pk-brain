@@ -1,5 +1,6 @@
 import express from 'express';
 import { supabase } from '../services/supabase.js';
+import { v2 as cloudinary } from 'cloudinary';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -40,24 +41,60 @@ uploadRouter.post('/', async (req, res) => {
       console.warn('Local public sync warning:', e.message);
     }
 
-    // 1. Upload to permanent free CDN (Catbox.moe) for instant global access (0$, No Domain, No Git)
     let cdnUrl = null;
-    try {
-      const blob = new Blob([buffer], { type: mimeType });
-      const formData = new FormData();
-      formData.append('reqtype', 'fileupload');
-      formData.append('fileToUpload', blob, randomName);
 
-      const cdnRes = await fetch('https://catbox.moe/user/api.php', {
-        method: 'POST',
-        body: formData
-      });
-      const returnedUrl = (await cdnRes.text()).trim();
-      if (returnedUrl.startsWith('https://')) {
-        cdnUrl = returnedUrl;
+    // Tier 1: Cloudinary Enterprise CDN (if configured)
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+    if (cloudName && apiKey && apiSecret) {
+      try {
+        cloudinary.config({
+          cloud_name: cloudName,
+          api_key: apiKey,
+          api_secret: apiSecret,
+          secure: true
+        });
+
+        const cldRes = await new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { folder: 'pk-brain-uploads', resource_type: 'auto' },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          );
+          stream.end(buffer);
+        });
+
+        if (cldRes?.secure_url) {
+          cdnUrl = cldRes.secure_url;
+        }
+      } catch (cldErr) {
+        console.warn('Cloudinary upload warning:', cldErr.message);
       }
-    } catch (cdnErr) {
-      console.warn('CDN upload warning:', cdnErr.message);
+    }
+
+    // Tier 2: Catbox Free Permanent CDN (if Cloudinary not set or fails)
+    if (!cdnUrl) {
+      try {
+        const blob = new Blob([buffer], { type: mimeType });
+        const formData = new FormData();
+        formData.append('reqtype', 'fileupload');
+        formData.append('fileToUpload', blob, randomName);
+
+        const cdnRes = await fetch('https://catbox.moe/user/api.php', {
+          method: 'POST',
+          body: formData
+        });
+        const returnedUrl = (await cdnRes.text()).trim();
+        if (returnedUrl.startsWith('https://')) {
+          cdnUrl = returnedUrl;
+        }
+      } catch (cdnErr) {
+        console.warn('Catbox CDN upload warning:', cdnErr.message);
+      }
     }
 
     // 2. Local Backup: Upload to Supabase Storage
