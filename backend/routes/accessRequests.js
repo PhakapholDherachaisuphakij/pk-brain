@@ -1,9 +1,16 @@
 import express from 'express';
-import { supabase } from '../services/supabase.js';
+import { createClient } from '@supabase/supabase-js';
 
 const router = express.Router();
 
-// GET all access requests
+const cloudUrl = process.env.SUPABASE_CLOUD_URL || 'https://frpbnexgcxfjpsrlsylt.supabase.co';
+const cloudKey = process.env.SUPABASE_CLOUD_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZycGJuZXhnY3hmanBzcmxzeWx0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODY0NzI4NiwiZXhwIjoyMDk0MjIzMjg2fQ.yuAKh44jIVoSgxpmHY_a-kx2FrtkxfoENgygBDEZiuk';
+
+const supabase = createClient(cloudUrl, cloudKey, {
+  auth: { persistSession: false }
+});
+
+// GET all access requests from Supabase Cloud
 router.get('/', async (req, res) => {
   try {
     const { data, error } = await supabase
