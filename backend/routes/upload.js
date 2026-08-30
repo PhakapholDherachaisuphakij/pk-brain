@@ -70,10 +70,8 @@ uploadRouter.post('/', async (req, res) => {
       .getPublicUrl(filePath);
 
     let publicUrl = publicUrlData?.publicUrl || '';
-    const publicBase = process.env.SUPABASE_PUBLIC_URL;
-    const internalBase = process.env.SUPABASE_URL;
-    if (publicBase && internalBase && publicUrl.startsWith(internalBase)) {
-      publicUrl = publicUrl.replace(internalBase, publicBase);
+    if (publicUrl.includes('/storage/v1/object/public/')) {
+      publicUrl = '/storage/v1/object/public/' + publicUrl.split('/storage/v1/object/public/')[1];
     }
 
     res.json({

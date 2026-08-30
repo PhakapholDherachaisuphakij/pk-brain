@@ -53,6 +53,23 @@ app.use('/api/portfolio', portfolioRouter);
 app.use('/api/webhooks', webhooksRouter);
 app.use('/api/upload', uploadRouter);
 
+// Universal Storage Proxy (Domain-agnostic for Wi-Fi, Tailscale, Cloudflare & iPad)
+app.use('/storage', async (req, res) => {
+  try {
+    const targetUrl = `http://localhost:8000/storage${req.url}`;
+    const response = await fetch(targetUrl);
+    if (!response.ok) {
+      return res.status(response.status).send('Storage asset not found');
+    }
+    const contentType = response.headers.get('content-type');
+    if (contentType) res.setHeader('Content-Type', contentType);
+    const arrayBuffer = await response.arrayBuffer();
+    res.send(Buffer.from(arrayBuffer));
+  } catch (err) {
+    res.status(500).send('Error proxying storage asset: ' + err.message);
+  }
+});
+
 // Serve Production Frontend Static Bundle directly from Express
 const frontendDist = path.join(__dirname, '../frontend/dist');
 if (fs.existsSync(frontendDist)) {
