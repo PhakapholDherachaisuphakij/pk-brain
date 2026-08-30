@@ -10,6 +10,7 @@ import { knowledgeRouter } from './routes/knowledge.js';
 import { portfolioRouter } from './routes/portfolio.js';
 import { webhooksRouter } from './routes/webhooks.js';
 import { uploadRouter } from './routes/upload.js';
+import accessRequestsRouter from './routes/accessRequests.js';
 
 dotenv.config();
 
@@ -52,6 +53,7 @@ app.use('/api/knowledge', knowledgeRouter);
 app.use('/api/portfolio', portfolioRouter);
 app.use('/api/webhooks', webhooksRouter);
 app.use('/api/upload', uploadRouter);
+app.use('/api/access-requests', accessRequestsRouter);
 
 // Universal Storage Proxy (Domain-agnostic for Wi-Fi, Tailscale, Cloudflare & iPad)
 app.use('/storage', async (req, res) => {

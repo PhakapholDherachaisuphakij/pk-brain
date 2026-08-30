@@ -75,6 +75,18 @@ export default function Header({ stats, onOpenVault, onOpenProposals, onOpenStud
           )}
         </button>
 
+        {/* Access Requests Button */}
+        {props.onOpenAccessRequests && (
+          <button
+            onClick={props.onOpenAccessRequests}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 transition-all"
+            title="อนุมัติสิทธิ์เข้าใช้งาน PK Notes"
+          >
+            <span className="text-amber-400 font-bold">👥</span>
+            <span className="hidden sm:inline">Access Requests</span>
+          </button>
+        )}
+
         {/* Portfolio Studio Button */}
         <button
           onClick={onOpenStudio}

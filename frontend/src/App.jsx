@@ -7,6 +7,7 @@ import ProposalsModal from './components/ProposalsModal';
 import PortfolioStudio from './components/PortfolioStudio';
 import ChatHistorySidebar from './components/ChatHistorySidebar';
 import PinLockModal from './components/PinLockModal';
+import AccessRequestsModal from './components/AccessRequestsModal';
 import { api } from './lib/api';
 
 export default function App() {
@@ -17,7 +18,7 @@ export default function App() {
   const [sessionId, setSessionId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState(null);
-  const [activeModal, setActiveModal] = useState(null); // 'vault' | 'proposals' | 'studio' | 'history' | null
+  const [activeModal, setActiveModal] = useState(null); // 'vault' | 'proposals' | 'studio' | 'history' | 'requests' | null
 
   const fetchStats = async () => {
     if (!isAuthenticated) return;
@@ -118,6 +119,7 @@ export default function App() {
         onOpenProposals={() => setActiveModal(activeModal === 'proposals' ? null : 'proposals')}
         onOpenStudio={() => setActiveModal(activeModal === 'studio' ? null : 'studio')}
         onOpenHistory={() => setActiveModal(activeModal === 'history' ? null : 'history')}
+        onOpenAccessRequests={() => setActiveModal(activeModal === 'requests' ? null : 'requests')}
         onNewChat={handleNewChat}
         onLock={handleLock}
         activeTab={activeModal}
@@ -166,6 +168,12 @@ export default function App() {
         isOpen={activeModal === 'studio'}
         onClose={() => setActiveModal(null)}
         onRefreshData={fetchStats}
+      />
+
+      {/* Note Access Requests Modal */}
+      <AccessRequestsModal
+        isOpen={activeModal === 'requests'}
+        onClose={() => setActiveModal(null)}
       />
     </div>
   );
