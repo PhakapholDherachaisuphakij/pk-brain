@@ -107,6 +107,61 @@ knowledgeRouter.post('/', async (req, res) => {
   }
 });
 
+// PUT /api/knowledge/:id - Update knowledge entry
+knowledgeRouter.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { summary, category, content, tags } = req.body;
+
+    const updatePayload = { updated_at: new Date() };
+    if (summary !== undefined) updatePayload.summary = summary;
+    if (category !== undefined) updatePayload.category = category;
+    if (content !== undefined) updatePayload.content = content;
+
+    const { data: entry, error } = await supabase
+      .from('knowledge_entries')
+      .update(updatePayload)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    if (Array.isArray(tags)) {
+      // Refresh tags
+      await supabase.from('knowledge_tags').delete().eq('entry_id', id);
+      if (tags.length > 0) {
+        const tagRows = tags.map(t => ({ entry_id: id, tag: t.trim().toLowerCase() }));
+        await supabase.from('knowledge_tags').insert(tagRows);
+      }
+    }
+
+    res.json(entry);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/knowledge/:id/pin - Toggle pin status
+knowledgeRouter.patch('/:id/pin', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { is_pinned } = req.body;
+
+    const { data: entry, error } = await supabase
+      .from('knowledge_entries')
+      .update({ is_pinned: Boolean(is_pinned), updated_at: new Date() })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(entry);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // DELETE /api/knowledge/:id
 knowledgeRouter.delete('/:id', async (req, res) => {
   try {

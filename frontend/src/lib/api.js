@@ -61,6 +61,12 @@ export const api = {
     return res.json();
   },
 
+  async deleteSession(sessionId) {
+    const res = await fetch(`${API_BASE}/chat/sessions/${sessionId}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete session');
+    return res.json();
+  },
+
   // Knowledge
   async getKnowledge(params = {}) {
     const query = new URLSearchParams(params).toString();
@@ -72,6 +78,26 @@ export const api = {
   async getKnowledgeStats() {
     const res = await fetch(`${API_BASE}/knowledge/stats`);
     if (!res.ok) throw new Error('Failed to load stats');
+    return res.json();
+  },
+
+  async updateKnowledge(id, data) {
+    const res = await fetch(`${API_BASE}/knowledge/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Failed to update knowledge');
+    return res.json();
+  },
+
+  async togglePinKnowledge(id, isPinned) {
+    const res = await fetch(`${API_BASE}/knowledge/${id}/pin`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_pinned: isPinned })
+    });
+    if (!res.ok) throw new Error('Failed to pin knowledge');
     return res.json();
   },
 

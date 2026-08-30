@@ -5,6 +5,7 @@ import PromptInput from './components/PromptInput';
 import KnowledgeVault from './components/KnowledgeVault';
 import ProposalsModal from './components/ProposalsModal';
 import PortfolioStudio from './components/PortfolioStudio';
+import ChatHistorySidebar from './components/ChatHistorySidebar';
 import PinLockModal from './components/PinLockModal';
 import { api } from './lib/api';
 
@@ -16,7 +17,7 @@ export default function App() {
   const [sessionId, setSessionId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState(null);
-  const [activeModal, setActiveModal] = useState(null); // 'vault' | 'proposals' | 'studio' | null
+  const [activeModal, setActiveModal] = useState(null); // 'vault' | 'proposals' | 'studio' | 'history' | null
 
   const fetchStats = async () => {
     if (!isAuthenticated) return;
@@ -82,6 +83,19 @@ export default function App() {
     setActiveModal(null);
   };
 
+  const handleSelectSession = async (id) => {
+    try {
+      setLoading(true);
+      setSessionId(id);
+      const msgs = await api.getSessionMessages(id);
+      setMessages(msgs || []);
+    } catch (err) {
+      console.error('Error loading session messages:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleProposalResolved = (id, status) => {
     fetchStats();
   };
@@ -103,6 +117,7 @@ export default function App() {
         onOpenVault={() => setActiveModal(activeModal === 'vault' ? null : 'vault')}
         onOpenProposals={() => setActiveModal(activeModal === 'proposals' ? null : 'proposals')}
         onOpenStudio={() => setActiveModal(activeModal === 'studio' ? null : 'studio')}
+        onOpenHistory={() => setActiveModal(activeModal === 'history' ? null : 'history')}
         onNewChat={handleNewChat}
         onLock={handleLock}
         activeTab={activeModal}
@@ -122,6 +137,15 @@ export default function App() {
           loading={loading}
         />
       </main>
+
+      {/* Chat History Sidebar */}
+      <ChatHistorySidebar
+        isOpen={activeModal === 'history'}
+        onClose={() => setActiveModal(null)}
+        currentSessionId={sessionId}
+        onSelectSession={handleSelectSession}
+        onNewChat={handleNewChat}
+      />
 
       {/* Knowledge Vault Slide-over */}
       <KnowledgeVault

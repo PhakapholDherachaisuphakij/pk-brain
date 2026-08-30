@@ -1,11 +1,20 @@
 import React from 'react';
-import { Brain, Sparkles, BookOpen, Plus, FolderGit2, Lock } from 'lucide-react';
+import { Brain, Sparkles, BookOpen, Plus, FolderGit2, Lock, History } from 'lucide-react';
 
-export default function Header({ stats, onOpenVault, onOpenProposals, onOpenStudio, onNewChat, onLock, activeTab }) {
+export default function Header({ stats, onOpenVault, onOpenProposals, onOpenStudio, onOpenHistory, onNewChat, onLock, activeTab }) {
   return (
     <header className="h-14 border-b border-white/5 bg-black/60 backdrop-blur-xl px-4 flex items-center justify-between sticky top-0 z-30">
       {/* Left: Brand Logo & Identity */}
       <div className="flex items-center gap-3">
+        <button 
+          onClick={onOpenHistory}
+          className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 transition-colors flex items-center gap-1.5"
+          title="ดูประวัติการคุยทั้งหมด"
+        >
+          <History className="w-4 h-4 text-blue-400" />
+          <span className="text-xs font-semibold hidden md:inline">History</span>
+        </button>
+
         <button 
           onClick={onNewChat}
           className="flex items-center gap-2 group cursor-pointer focus:outline-none"

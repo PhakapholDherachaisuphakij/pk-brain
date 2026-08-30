@@ -251,3 +251,16 @@ chatRouter.post('/', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// DELETE /api/chat/sessions/:id - Delete a chat session and its messages
+chatRouter.delete('/sessions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await supabase.from('chat_messages').delete().eq('session_id', id);
+    const { error } = await supabase.from('chat_sessions').delete().eq('id', id);
+    if (error) throw error;
+    res.json({ success: true, message: 'Session deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
