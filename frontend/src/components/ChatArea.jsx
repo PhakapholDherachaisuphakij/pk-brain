@@ -101,8 +101,19 @@ export default function ChatArea({ messages, loading, onSelectPrompt, onProposal
                     >
                       {/* Attached Images (Single or Multi-image Grid) */}
                       {(() => {
-                        const imgs = meta.image_urls || msg.image_urls || (meta.image_url || msg.image_url ? [meta.image_url || msg.image_url] : []);
-                        if (imgs.length === 0) return null;
+                        const rawImgs = meta.image_urls || msg.image_urls || (meta.image_url || msg.image_url ? [meta.image_url || msg.image_url] : []);
+                        if (rawImgs.length === 0) return null;
+
+                        const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+                        const currentProtocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
+
+                        const imgs = rawImgs.map(url => {
+                          if (!url || typeof url !== 'string') return '';
+                          if (url.includes('localhost:8000')) {
+                            return url.replace(/http:\/\/localhost:8000/g, `${currentProtocol}//${currentHost}:8000`);
+                          }
+                          return url;
+                        }).filter(Boolean);
 
                         return (
                           <div className={`mb-3 grid gap-2 rounded-2xl overflow-hidden ${
@@ -118,6 +129,16 @@ export default function ChatArea({ messages, loading, onSelectPrompt, onProposal
                                   src={url}
                                   alt={`Attachment ${iIdx + 1}`}
                                   className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300"
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    // Fallback to local storage path if original URL fails
+                                    if (url.includes('/storage/v1/object/public/')) {
+                                      const parts = url.split('/storage/v1/object/public/')[1];
+                                      const subParts = parts.split('/');
+                                      subParts.shift();
+                                      e.target.src = `/${decodeURIComponent(subParts.join('/'))}`;
+                                    }
+                                  }}
                                 />
                               </div>
                             ))}
