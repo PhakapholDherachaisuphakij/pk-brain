@@ -79,17 +79,20 @@ export async function callTyphoon(messages, temperature = 0.6, maxTokens = 1000)
 export async function generateChatResponse(chatHistory, userMessage) {
   const identity = await getUserIdentityContext();
 
-  const systemPrompt = `คุณคือ "PK Brain" ผู้ช่วย AI ศูนย์กลางความรู้และสมองส่วนที่สอง (Second Brain) ของ ${identity.name}
-หน้าที่หลักของคุณ:
-1. รับฟัง สรุป บันทึกความรู้ ทักษะ การเรียนรู้ กิจกรรม (Activities) และโปรเจกต์ (Projects) ของ ${identity.name} เพื่อนำไปใช้ประโยชน์ในอนาคต (เช่น การทำ Resume, การอัปเดต Portfolio, การทบทวนความรู้)
-2. บริบทตัวตนของ ${identity.name}:
-   - บทบาท: ${identity.role}
-   - การศึกษา/งาน: นักศึกษา KMUTT, วิศวกร QA ที่ SCB, ทุนศิริวิริยะ, ผู้พัฒนาโปรเจกต์และผู้จัดกิจกรรม/การสอนต่างๆ
+  const systemPrompt = `คุณคือ "PK Brain" (Jarvis) ผู้ช่วย AI อัจฉริยะและคลังสมองส่วนที่สอง (Second Brain) ของ ${identity.name}
+
+สไตล์การตอบแบบ "Quick Logger" (กระชับ คม ได้ใจความ ไม่เยิ่นเย้อ):
+1. สรุปสิ่งที่ ${identity.name} เล่าออกมาเป็น Bullet Points ที่ชัดเจนทันที:
+   - 📌 **สาระสำคัญ / สิ่งที่ทำ (Action Taken)**
+   - 💡 **บทเรียน & สิ่งที่ได้เรียนรู้ (Key Insights & Skills)**
+   - 🏷️ **หมวดหมู่ & แท็ก (Category & Tags)**
+2. แจ้งสถานะสั้นๆ ว่าระบบได้บันทึกเข้า Knowledge Vault และเตรียม Proposal (ถ้ามี) เรียบร้อยแล้ว
+3. บริบทของ ${identity.name}:
+   - บทบาท: ${identity.role} (นักศึกษา KMUTT, SCB QA Engineer, Frontend Developer & Instructor)
    - ทักษะสำคัญ: ${identity.top_skills.join(', ')}
-   - โปรเจกต์ใน Portfolio: ${identity.existing_portfolio_projects.join(', ')}
-   - กิจกรรมใน Portfolio: ${identity.existing_portfolio_activities.join(', ')}
-3. ตอบอย่างฉลาด มีวิสัยทัศน์ คล่องแคล่ว สนับสนุน และสรุปองค์ความรู้ให้พร้อมนำไปใส่ใน Portfolio/Resume ได้ทันที
-4. โฟกัสเฉพาะเรื่องการพัฒนาตนเอง การสอน การงาน การเรียน ทักษะ กิจกรรม และโปรเจกต์ (ไม่เกี่ยวกับเรื่องบันเทิง/ซีรีย์หนัง)`;
+   - โปรเจกต์ในพอร์ต: ${identity.existing_portfolio_projects.join(', ')}
+   - กิจกรรมในพอร์ต: ${identity.existing_portfolio_activities.join(', ')}
+4. ห้ามถามซักไซ้เยิ่นเย้อ เน้นความเร็ว ประสิทธิภาพ และความพร้อมใช้งานใน Portfolio/Resume ทันที`;
 
   const messages = [
     { role: 'system', content: systemPrompt },
@@ -97,7 +100,7 @@ export async function generateChatResponse(chatHistory, userMessage) {
     { role: 'user', content: userMessage }
   ];
 
-  return await callTyphoon(messages, 0.7, 1200);
+  return await callTyphoon(messages, 0.5, 800);
 }
 
 export async function analyzeAndExtractKnowledge(userMessage, assistantReply) {
@@ -145,7 +148,7 @@ ${userMessage}
 
 โปรดตอบในรูปแบบ JSON Schema นี้เท่านั้น (ห้ามมี Markdown หรือข้อความอื่น):
 {
-  "should_save": true หรือ false,
+  "should_save": true,
   "category": "activity" | "learning" | "career" | "project-log" | "milestone" | "tech-stack" | "scb-work" | "kmutt-study" | "idea" | "general",
   "summary": "สรุปสาระสำคัญ 1-2 ประโยคสำหรับใช้เป็น Knowledge",
   "tags": ["แท็ก1", "แท็ก2"],
@@ -165,6 +168,8 @@ ${userMessage}
     if (clean.startsWith('```')) {
       clean = clean.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
     }
+
+    const parsed = JSON.parse(clean);
 
     // Robust title fallback & validation
     if (parsed.is_major_activity && parsed.activity_details) {

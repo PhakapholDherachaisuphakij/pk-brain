@@ -1,6 +1,8 @@
 import express from 'express';
 import { supabase } from '../services/supabase.js';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 
 export const uploadRouter = express.Router();
 
