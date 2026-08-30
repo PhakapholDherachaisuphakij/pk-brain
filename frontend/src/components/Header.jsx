@@ -1,7 +1,17 @@
 import React from 'react';
 import { Brain, Sparkles, BookOpen, Plus, FolderGit2, Lock, History } from 'lucide-react';
 
-export default function Header({ stats, onOpenVault, onOpenProposals, onOpenStudio, onOpenHistory, onNewChat, onLock, activeTab }) {
+export default function Header({ 
+  stats, 
+  onOpenVault, 
+  onOpenProposals, 
+  onOpenStudio, 
+  onOpenHistory, 
+  onOpenAccessRequests,
+  onNewChat, 
+  onLock, 
+  activeTab 
+}) {
   return (
     <header className="h-14 border-b border-white/5 bg-black/60 backdrop-blur-xl px-4 flex items-center justify-between sticky top-0 z-30">
       {/* Left: Brand Logo & Identity */}
@@ -76,10 +86,14 @@ export default function Header({ stats, onOpenVault, onOpenProposals, onOpenStud
         </button>
 
         {/* Access Requests Button */}
-        {props.onOpenAccessRequests && (
+        {onOpenAccessRequests && (
           <button
-            onClick={props.onOpenAccessRequests}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 transition-all"
+            onClick={onOpenAccessRequests}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              activeTab === 'requests'
+                ? 'bg-amber-600 text-white shadow-glow'
+                : 'bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10'
+            }`}
             title="อนุมัติสิทธิ์เข้าใช้งาน PK Notes"
           >
             <span className="text-amber-400 font-bold">👥</span>
