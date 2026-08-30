@@ -48,59 +48,32 @@ export async function getUserIdentityContext() {
   }
 }
 
-export async function callOllama(messages, model = process.env.OLLAMA_MODEL || 'hermes3:8b', temperature = 0.6, maxTokens = 1000) {
-  const ollamaUrl = process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434/v1';
-  try {
-    const response = await fetch(`${ollamaUrl}/chat/completions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature,
-        max_tokens: maxTokens
-      })
-    });
-    if (!response.ok) return null;
-    const data = await response.json();
-    return data.choices?.[0]?.message?.content || null;
-  } catch (e) {
-    return null;
-  }
-}
-
 export async function callTyphoon(messages, temperature = 0.6, maxTokens = 1000) {
-  if (TYPHOON_API_KEY) {
-    try {
-      const response = await fetch(`${TYPHOON_BASE_URL}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${TYPHOON_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: TYPHOON_MODEL,
-          messages,
-          temperature,
-          max_tokens: maxTokens
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const content = data.choices?.[0]?.message?.content;
-        if (content) return content;
-      }
-    } catch (err) {
-      console.warn('Typhoon API request error, attempting Ollama fallback:', err.message);
-    }
+  if (!TYPHOON_API_KEY) {
+    throw new Error('TYPHOON_API_KEY is not configured');
   }
 
-  // Fallback to local Ollama (Hermes / Llama) if Typhoon is unreachable
-  const localReply = await callOllama(messages, process.env.OLLAMA_MODEL || 'hermes3:8b', temperature, maxTokens);
-  if (localReply) return localReply;
+  const response = await fetch(`${TYPHOON_BASE_URL}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${TYPHOON_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: TYPHOON_MODEL,
+      messages,
+      temperature,
+      max_tokens: maxTokens
+    })
+  });
 
-  throw new Error('All AI engines (Typhoon API and Local Ollama) are currently unavailable');
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Typhoon API error (${response.status}): ${errText}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || '';
 }
 
 export async function generateChatResponse(chatHistory, userMessage) {
