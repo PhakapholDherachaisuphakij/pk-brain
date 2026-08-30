@@ -40,43 +40,67 @@ uploadRouter.post('/', async (req, res) => {
       console.warn('Local public sync warning:', e.message);
     }
 
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadErr } = await supabase
-      .storage
-      .from(bucket)
-      .upload(filePath, buffer, {
-        contentType: mimeType,
-        upsert: true
-      });
+    // 1. Upload to permanent free CDN (Catbox.moe) for instant global access (0$, No Domain, No Git)
+    let cdnUrl = null;
+    try {
+      const blob = new Blob([buffer], { type: mimeType });
+      const formData = new FormData();
+      formData.append('reqtype', 'fileupload');
+      formData.append('fileToUpload', blob, randomName);
 
-    let targetBucket = bucket;
-    if (uploadErr) {
-      targetBucket = 'image';
-      // Fallback to 'image' bucket if portfolio-assets errors
-      const { data: fallbackData, error: fallbackErr } = await supabase
+      const cdnRes = await fetch('https://catbox.moe/user/api.php', {
+        method: 'POST',
+        body: formData
+      });
+      const returnedUrl = (await cdnRes.text()).trim();
+      if (returnedUrl.startsWith('https://')) {
+        cdnUrl = returnedUrl;
+      }
+    } catch (cdnErr) {
+      console.warn('CDN upload warning:', cdnErr.message);
+    }
+
+    // 2. Local Backup: Upload to Supabase Storage
+    let publicUrl = '';
+    try {
+      const { data: uploadData, error: uploadErr } = await supabase
         .storage
-        .from('image')
+        .from(bucket)
         .upload(filePath, buffer, {
           contentType: mimeType,
           upsert: true
         });
-      if (fallbackErr) throw fallbackErr;
+
+      let targetBucket = bucket;
+      if (uploadErr) {
+        targetBucket = 'image';
+        await supabase
+          .storage
+          .from('image')
+          .upload(filePath, buffer, {
+            contentType: mimeType,
+            upsert: true
+          }).catch(() => {});
+      }
+
+      const { data: publicUrlData } = supabase
+        .storage
+        .from(targetBucket)
+        .getPublicUrl(filePath);
+
+      publicUrl = publicUrlData?.publicUrl || '';
+      if (publicUrl.includes('/storage/v1/object/public/')) {
+        publicUrl = '/storage/v1/object/public/' + publicUrl.split('/storage/v1/object/public/')[1];
+      }
+    } catch (e) {
+      console.warn('Local Supabase storage backup warning:', e.message);
     }
 
-    // Generate public URL
-    const { data: publicUrlData } = supabase
-      .storage
-      .from(targetBucket)
-      .getPublicUrl(filePath);
-
-    let publicUrl = publicUrlData?.publicUrl || '';
-    if (publicUrl.includes('/storage/v1/object/public/')) {
-      publicUrl = '/storage/v1/object/public/' + publicUrl.split('/storage/v1/object/public/')[1];
-    }
+    const finalUrl = cdnUrl || publicUrl;
 
     res.json({
       success: true,
-      url: publicUrl,
+      url: finalUrl,
       filename: randomName
     });
 
